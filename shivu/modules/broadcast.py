@@ -1,88 +1,67 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import CallbackContext, CommandHandler, CallbackQueryHandler
-from shivu import application, top_global_groups_collection, pm_users, OWNER_ID, sudo_users
+from telegram import Update, Chat, ChatInviteLink
+from telegram.ext import CallbackContext, CommandHandler
+from shivu import application, top_global_groups_collection, pm_users, OWNER_ID, SUDOERS
 
-# Make sure OWNER_ID is in sudo_users
-if OWNER_ID not in sudo_users:
-    sudo_users.append(OWNER_ID)
+async def broadcast(update: Update, context: CallbackContext):
+    user_id = update.effective_user.id
 
-# Cache to hold pending broadcast requests
-broadcast_cache = {}
-
-async def boardcast(update: Update, context: CallbackContext) -> None:
-    sender_id = str(update.effective_user.id)
-
-    if sender_id not in sudo_users:
-        await update.message.reply_text("🚫 You don't have permission to use this command.")
+    if user_id != OWNER_ID and user_id not in SUDOERS:
+        await update.message.reply_text("You're not allowed to use this command.")
         return
 
-    # Handle message input
-    if update.message.reply_to_message:
-        message = update.message.reply_to_message
-        broadcast_cache[sender_id] = {'type': 'forward', 'chat_id': message.chat_id, 'msg_id': message.message_id}
-    elif context.args:
-        broadcast_cache[sender_id] = {'type': 'text', 'text': " ".join(context.args)}
-    else:
-        await update.message.reply_text("⚠️ Please reply to a message or provide text to broadcast.")
+    reply_msg = update.message.reply_to_message
+    if not reply_msg:
+        await update.message.reply_text("Please reply to a message to broadcast.")
         return
 
-    # Ask for confirmation
-    keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("✅ Confirm", callback_data="confirm_broadcast")]])
-    await update.message.reply_text("⚠️ Are you sure you want to send this broadcast to all users?", reply_markup=keyboard)
+    group_ids = await top_global_groups_collection.distinct("group_id")
+    user_ids = await pm_users.distinct("_id")
+    all_chats = list(set(group_ids + user_ids))
 
-async def confirm_broadcast_callback(update: Update, context: CallbackContext) -> None:
-    query = update.callback_query
-    await query.answer()
-    sender_id = str(query.from_user.id)
+    sent = 0
+    failed = 0
+    pinned = 0
+    pin_failed = 0
+    group_report = []
 
-    if sender_id not in broadcast_cache:
-        await query.edit_message_text("❌ No pending broadcast found.")
-        return
-
-    data = broadcast_cache.pop(sender_id)
-    all_chats = await top_global_groups_collection.distinct("group_id")
-    all_users = await pm_users.distinct("_id")
-    all_targets = list(set(all_chats + all_users))
-
-    failed_sends = 0
-    pin_success = 0
-    pin_fail = 0
-
-    for chat_id in all_targets:
+    for chat_id in all_chats:
         try:
-            if data['type'] == 'forward':
-                sent_msg = await context.bot.forward_message(
-                    chat_id=chat_id,
-                    from_chat_id=data['chat_id'],
-                    message_id=data['msg_id']
-                )
-            else:
-                sent_msg = await context.bot.send_message(chat_id=chat_id, text=data['text'])
+            sent_msg = await context.bot.forward_message(
+                chat_id=chat_id,
+                from_chat_id=reply_msg.chat_id,
+                message_id=reply_msg.message_id
+            )
+            sent += 1
 
-            # Try to pin
-            try:
-                await context.bot.pin_chat_message(chat_id=chat_id, message_id=sent_msg.message_id, disable_notification=True)
-                pin_success += 1
-            except Exception:
-                pin_fail += 1
+            chat = await context.bot.get_chat(chat_id)
+            if chat.type in [Chat.GROUP, Chat.SUPERGROUP]:
+                try:
+                    await context.bot.pin_chat_message(chat_id=chat_id, message_id=sent_msg.message_id)
+                    pinned += 1
 
-        except Exception:
-            failed_sends += 1
+                    try:
+                        invite_link = chat.username and f"https://t.me/{chat.username}" or "Private group"
+                        group_report.append(f"✅ {chat.title or chat_id} - {invite_link}")
+                    except:
+                        group_report.append(f"✅ {chat.title or chat_id} - [Invite link error]")
+                except:
+                    pin_failed += 1
+                    group_report.append(f"⚠️ {chat.title or chat_id} - Failed to pin")
 
-    summary = (
-        f"📢 Broadcast Completed\n"
-        f"📬 Total Targets: {len(all_targets)}\n"
-        f"❌ Failed Sends: {failed_sends}\n"
-        f"📌 Pinned: {pin_success}\n"
-        f"🚫 Pin Failures: {pin_fail}"
+        except Exception as e:
+            failed += 1
+            print(f"Failed to send to {chat_id}: {e}")
+
+    report = (
+        f"📣 Broadcast Report:\n"
+        f"👥 Total chats/users: {len(all_chats)}\n"
+        f"✅ Sent: {sent}\n"
+        f"❌ Failed: {failed}\n"
+        f"📌 Pinned: {pinned}\n"
+        f"⚠️ Pin Failed: {pin_failed}\n\n"
+        f"📋 Group Results:\n" + "\n".join(group_report[:50])  # Limit to 50 lines for length
     )
 
-    # Edit confirmation message
-    await query.edit_message_text("✅ Broadcast sent.")
+    await context.bot.send_message(chat_id=OWNER_ID, text=report)
 
-    # Send detailed report to OWNER
-    await context.bot.send_message(chat_id=OWNER_ID, text=summary)
-
-# Handlers
-application.add_handler(CommandHandler("boardcast", boardcast, block=False))
-application.add_handler(CallbackQueryHandler(confirm_broadcast_callback, pattern="^confirm_broadcast$"))
+application.add_handler(CommandHandler("broadcast", broadcast, block=False))

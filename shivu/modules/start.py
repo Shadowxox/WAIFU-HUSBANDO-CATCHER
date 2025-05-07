@@ -36,7 +36,7 @@ async def start(update: Update, context: CallbackContext) -> None:
         caption = f"""
         ***Heyyyy...***
 
-***I am An Open Source Character Catcher Bot...​Add Me in Your group.. And I will send Random Characters After.. every 100 messages in Group... Use /guess to.. Collect that Characters in Your Collection.. and see Collection by using /Harem... So add in Your groups and Collect Your harem***
+***I am Waifu Catcher Bot of shadow...​Add Me in Your group.. And I will send Random Characters After.. every 100 messages in Group... Use /guess to.. Collect that Characters in Your Collection.. and see Collection by using /Harem... So add in Your groups and Collect Your harem***
         """
         
         keyboard = [
@@ -56,8 +56,7 @@ async def start(update: Update, context: CallbackContext) -> None:
             [InlineKeyboardButton("ADD ME", url=f'http://t.me/{BOT_USERNAME}?startgroup=new')],
             [InlineKeyboardButton("SUPPORT", url=f'https://t.me/{SUPPORT_CHAT}'),
             InlineKeyboardButton("UPDATES", url=f'https://t.me/{UPDATE_CHAT}')],
-            [InlineKeyboardButton("HELP", callback_data='help')],
-            [InlineKeyboardButton("SOURCE", url=f'https://github.com/MyNameIsShekhar/WAIFU-HUSBANDO-CATCHER')]
+            [InlineKeyboardButton("HELP", callback_data='help')]
         ]
         
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -79,6 +78,7 @@ async def button(update: Update, context: CallbackContext) -> None:
 ***/topgroups : See Top Groups.. Ppl Guesses Most in that Groups***
 ***/top: Too See Top Users***
 ***/ctop : Your ChatTop***
+***/givec : Give you character( only works on vip sudo user)***
 ***/changetime: Change Character appear time (only works in Groups)***
    """
         help_keyboard = [[InlineKeyboardButton("⤾ Bᴀᴄᴋ", callback_data='back')]]
@@ -99,8 +99,7 @@ async def button(update: Update, context: CallbackContext) -> None:
             [InlineKeyboardButton("ADD ME", url=f'http://t.me/{BOT_USERNAME}?startgroup=new')],
             [InlineKeyboardButton("SUPPORT", url=f'https://t.me/{SUPPORT_CHAT}'),
             InlineKeyboardButton("UPDATES", url=f'https://t.me/{UPDATE_CHAT}')],
-            [InlineKeyboardButton("HELP", callback_data='help')],
-            [InlineKeyboardButton("SOURCE", url=f'https://github.com/MyNameIsShekhar/WAIFU-HUSBANDO-CATCHER')]
+            [InlineKeyboardButton("HELP", callback_data='help')]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 

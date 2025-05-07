@@ -2,18 +2,18 @@ class Config(object):
     LOGGER = True
 
     # Get this value from my.telegram.org/apps
-    OWNER_ID = "6765826972"
-    sudo_users = "6845325416", "6765826972"
-    GROUP_ID = -1002133191051
-    TOKEN = "6707490163:AAHZzqjm3rbEZsObRiNaT7DMtw_i5WPo_0o"
+    OWNER_ID = "7795212861"
+    sudo_users = "7361967332", "5758240622", "7795212861"
+    GROUP_ID = -1002643948280
+    TOKEN = "7525650740:AAHujfrXw8A4F3YthCemnWm5re28AbPcYBY"
     mongo_url = "mongodb+srv://HaremDBBot:ThisIsPasswordForHaremDB@haremdb.swzjngj.mongodb.net/?retryWrites=true&w=majority"
-    PHOTO_URL = ["https://telegra.ph/file/b925c3985f0f325e62e17.jpg", "https://telegra.ph/file/4211fb191383d895dab9d.jpg"]
-    SUPPORT_CHAT = "Collect_em_support"
-    UPDATE_CHAT = "Collect_em_support"
-    BOT_USERNAME = "Collect_Em_AllBot"
+    PHOTO_URL = ["https://i.ibb.co/RGm4r4q0/image.jpg", "https://i.ibb.co/Kcxbdcm4/image.jpg"]
+    SUPPORT_CHAT = "hwkwjieie"
+    UPDATE_CHAT = "hwkwjieie"
+    BOT_USERNAME = "Shadow_testingbot"
     CHARA_CHANNEL_ID = "-1002133191051"
-    api_id = 26626068
-    api_hash = "bf423698bcbe33cfd58b11c78c42caa2"
+    api_id = 23287799
+    api_hash = "9f4f17dae2181ee22c275b9b40a3c907"
 
     
 class Production(Config):

@@ -49,7 +49,6 @@ async def givec_command(update: Update, context: CallbackContext):
         f"📛 Name: {waifu['name']}\n"
         f"⭐ Rarity: {waifu['rarity']}\n"
         f"🎬 Anime: {waifu['anime']}"
-        f"🆔️ ID: {waifu['id']}"
     )
 
     # Send image and message

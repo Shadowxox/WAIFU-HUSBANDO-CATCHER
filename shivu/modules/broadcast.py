@@ -1,123 +1,62 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, Message
-from telegram.ext import CallbackContext, CommandHandler, CallbackQueryHandler
-from shivu import application, sudo_users, pm_users as pm_collection, group_users as group_collection
+from telegram import Update, Message, Chat
+from telegram.ext import CommandHandler, ContextTypes
+from shivu import application, pm_users, group_users, OWNER_ID
 
-pending_broadcasts = {}
+async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != OWNER_ID:
+        return await update.message.reply_text("You are not authorized.")
 
-async def broadcast_command(update: Update, context: CallbackContext) -> None:
-    user_id = update.effective_user.id
-    if user_id not in sudo_users:
-        return await update.message.reply_text("🚫 You're not authorized to use this command.")
+    if update.message.reply_to_message:
+        to_broadcast = update.message.reply_to_message
+    elif context.args:
+        text = " ".join(context.args)
+        to_broadcast = await update.message.reply_text(text)
+    else:
+        return await update.message.reply_text("Reply to a message or use:\n`/broadcast your message`", parse_mode="Markdown")
 
-    reply: Message = update.message.reply_to_message
-    text = " ".join(context.args) if context.args else None
+    success = 0
+    failed = 0
+    pinned = 0
+    group_names = []
 
-    if not reply and not text:
-        return await update.message.reply_text("Reply to a message or use /broadcast <text>.")
-
-    pending_broadcasts[user_id] = {
-        "text": text,
-        "reply": reply
-    }
-
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("✅ Confirm", callback_data="confirm_broadcast"),
-         InlineKeyboardButton("❌ Cancel", callback_data="cancel_broadcast")]
-    ])
-
-    preview = text if text else "[Media reply]"
-    await update.message.reply_text(
-        f"⚠️ Are you sure you want to broadcast this?\n\n{preview}",
-        reply_markup=keyboard
-    )
-
-async def broadcast_callback(update: Update, context: CallbackContext) -> None:
-    query = update.callback_query
-    user_id = query.from_user.id
-    await query.answer()
-
-    if user_id not in sudo_users:
-        return await query.edit_message_text("🚫 Not authorized.")
-
-    if query.data == "cancel_broadcast":
-        pending_broadcasts.pop(user_id, None)
-        return await query.edit_message_text("❌ Broadcast cancelled.")
-
-    data = pending_broadcasts.get(user_id)
-    if not data:
-        return await query.edit_message_text("⚠️ Nothing to broadcast.")
-
-    await query.edit_message_text("📢 Broadcasting...")
-
-    total_success = 0
-    total_failed = 0
-    total_pinned = 0
-
-    # Send to private users
-    async for user in pm_collection.find():
+    # Send to PM users
+    async for user in pm_users.find({}):
         try:
-            if data["reply"]:
-                await data["reply"].copy(user["_id"])
-            else:
-                await context.bot.send_message(chat_id=user["_id"], text=data["text"])
-            total_success += 1
-        except Exception:
-            total_failed += 1
-
-    # Send to groups
-    async for group in group_collection.find():
-        group_id = group["_id"]
-        gc_name = group.get("title", "Unknown Group")
-        gc_success = 0
-        gc_failed = 0
-        gc_pinned = 0
-
-        try:
-            if data["reply"]:
-                sent_msg = await data["reply"].copy(group_id)
-            else:
-                sent_msg = await context.bot.send_message(chat_id=group_id, text=data["text"])
-            gc_success += 1
-            total_success += 1
-
-            try:
-                await context.bot.pin_chat_message(group_id, sent_msg.message_id, disable_notification=True)
-                gc_pinned += 1
-                total_pinned += 1
-            except:
-                pass
-
-        except Exception:
-            gc_failed += 1
-            total_failed += 1
-
-        # Report per group
-        report = f"""📊 <b>Broadcast Report</b>
-<b>GC Name:</b> {gc_name}
-<b>Success:</b> ✅ {gc_success}
-<b>Pinned:</b> 📌 {gc_pinned}
-<b>Unsuccess:</b> ❌ {gc_failed}
-"""
-        for owner_id in sudo_users:
-            try:
-                await context.bot.send_message(chat_id=owner_id, text=report, parse_mode="HTML")
-            except:
-                pass
-
-    # Final Summary
-    summary = f"""✅ <b>Broadcast Finished</b>
-<b>Total Sent:</b> {total_success}
-<b>Total Pinned:</b> {total_pinned}
-<b>Failed:</b> {total_failed}
-"""
-    for owner_id in sudo_users:
-        try:
-            await context.bot.send_message(chat_id=owner_id, text=summary, parse_mode="HTML")
+            await to_broadcast.copy(chat_id=user["_id"])
+            success += 1
         except:
-            pass
+            failed += 1
 
-    pending_broadcasts.pop(user_id, None)
+    # Send to groups & try pin
+    async for group in group_users.find({}):
+        group_id = group["_id"]
+        group_name = group.get("title", "Unknown")
+        try:
+            msg = await to_broadcast.copy(chat_id=group_id)
+            try:
+                await context.bot.pin_chat_message(chat_id=group_id, message_id=msg.message_id)
+                pinned += 1
+            except:
+                pass
+            group_names.append(group_name)
+            success += 1
+        except:
+            failed += 1
 
-# Register handlers
-application.add_handler(CommandHandler("broadcast", broadcast_command, block=False))
-application.add_handler(CallbackQueryHandler(broadcast_callback, pattern="^(confirm_broadcast|cancel_broadcast)$", block=False))
+    # Report to owner
+    report = (
+        f"📢 Broadcast Report:\n"
+        f"Group Names: {', '.join(group_names) or 'None'}\n"
+        f"Success: {success}\n"
+        f"Pined: {pinned}\n"
+        f"Unsuccess: {failed}"
+    )
+    try:
+        await context.bot.send_message(chat_id=OWNER_ID, text=report)
+    except:
+        pass
+
+    await update.message.reply_text("✅ Broadcast sent. Report delivered to owner.")
+
+# Add handler
+application.add_handler(CommandHandler("broadcast", broadcast, block=False))

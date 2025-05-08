@@ -1,67 +1,72 @@
-from telegram import Update, Chat, ChatInviteLink
+from telegram import Update, Chat
 from telegram.ext import CallbackContext, CommandHandler
 from shivu import application, top_global_groups_collection, pm_users, OWNER_ID, sudo_users
 
-async def broadcast(update: Update, context: CallbackContext):
+async def broadcast(update: Update, context: CallbackContext) -> None:
     user_id = update.effective_user.id
 
-    if user_id != OWNER_ID and user_id not in SUDOERS:
-        await update.message.reply_text("You're not allowed to use this command.")
+    # Check permission
+    if user_id != OWNER_ID and user_id not in sudo_users:
+        await update.message.reply_text("❌ You are not authorized to use this command.")
         return
 
-    reply_msg = update.message.reply_to_message
-    if not reply_msg:
-        await update.message.reply_text("Please reply to a message to broadcast.")
+    # Require reply to message
+    if not update.message.reply_to_message:
+        await update.message.reply_text("ℹ️ Please reply to a message to broadcast.")
         return
 
-    group_ids = await top_global_groups_collection.distinct("group_id")
-    user_ids = await pm_users.distinct("_id")
-    all_chats = list(set(group_ids + user_ids))
+    message_to_broadcast = update.message.reply_to_message
+    all_chats = await top_global_groups_collection.distinct("group_id")
+    all_users = await pm_users.distinct("_id")
+    all_ids = list(set(all_chats + all_users))
 
-    sent = 0
-    failed = 0
-    pinned = 0
-    pin_failed = 0
-    group_report = []
+    sent_count = 0
+    failed_count = 0
+    pinned_count = 0
+    not_pinned_count = 0
+    group_info = []
 
-    for chat_id in all_chats:
+    for chat_id in all_ids:
         try:
             sent_msg = await context.bot.forward_message(
                 chat_id=chat_id,
-                from_chat_id=reply_msg.chat_id,
-                message_id=reply_msg.message_id
+                from_chat_id=message_to_broadcast.chat_id,
+                message_id=message_to_broadcast.message_id
             )
-            sent += 1
+            sent_count += 1
 
-            chat = await context.bot.get_chat(chat_id)
-            if chat.type in [Chat.GROUP, Chat.SUPERGROUP]:
+            # Try to pin if it's a group
+            if chat_id < 0:
                 try:
-                    await context.bot.pin_chat_message(chat_id=chat_id, message_id=sent_msg.message_id)
-                    pinned += 1
-
-                    try:
-                        invite_link = chat.username and f"https://t.me/{chat.username}" or "Private group"
-                        group_report.append(f"✅ {chat.title or chat_id} - {invite_link}")
-                    except:
-                        group_report.append(f"✅ {chat.title or chat_id} - [Invite link error]")
+                    await context.bot.pin_chat_message(chat_id, sent_msg.message_id)
+                    pinned_count += 1
                 except:
-                    pin_failed += 1
-                    group_report.append(f"⚠️ {chat.title or chat_id} - Failed to pin")
+                    not_pinned_count += 1
+
+                # Try to get group info
+                try:
+                    chat = await context.bot.get_chat(chat_id)
+                    title = chat.title or "No Title"
+                    link = f"https://t.me/{chat.username}" if chat.username else "Private Group"
+                    group_info.append(f"{title} - {link}")
+                except:
+                    group_info.append(f"{chat_id} - Unknown Group")
 
         except Exception as e:
-            failed += 1
             print(f"Failed to send to {chat_id}: {e}")
+            failed_count += 1
 
+    # Report to OWNER_ID
     report = (
-        f"📣 Broadcast Report:\n"
-        f"👥 Total chats/users: {len(all_chats)}\n"
-        f"✅ Sent: {sent}\n"
-        f"❌ Failed: {failed}\n"
-        f"📌 Pinned: {pinned}\n"
-        f"⚠️ Pin Failed: {pin_failed}\n\n"
-        f"📋 Group Results:\n" + "\n".join(group_report[:50])  # Limit to 50 lines for length
+        f"📢 Broadcast Report:\n\n"
+        f"✅ Sent: {sent_count}\n"
+        f"❌ Failed: {failed_count}\n"
+        f"📌 Pinned: {pinned_count}\n"
+        f"🚫 Pin Failed: {not_pinned_count}\n\n"
+        f"🗂️ Group List:\n" + "\n".join(group_info[:50])  # Limit output size
     )
 
     await context.bot.send_message(chat_id=OWNER_ID, text=report)
 
+# Register the handler
 application.add_handler(CommandHandler("broadcast", broadcast, block=False))

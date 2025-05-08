@@ -1,62 +1,37 @@
-from telegram import Update, Message, Chat
-from telegram.ext import CommandHandler, ContextTypes
-from shivu import application, pm_users, group_users, OWNER_ID
+from telegram import Update
+from telegram.ext import CallbackContext, CommandHandler 
 
-async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != OWNER_ID:
-        return await update.message.reply_text("You are not authorized.")
+from shivu import application, OWNER_ID
+from shivu import  top_global_groups_collection , pm_users
 
-    if update.message.reply_to_message:
-        to_broadcast = update.message.reply_to_message
-    elif context.args:
-        text = " ".join(context.args)
-        to_broadcast = await update.message.reply_text(text)
-    else:
-        return await update.message.reply_text("Reply to a message or use:\n`/broadcast your message`", parse_mode="Markdown")
+async def broadcast(update: Update, context: CallbackContext) -> None:
 
-    success = 0
-    failed = 0
-    pinned = 0
-    group_names = []
+    if update.effective_user.id != 7481211733:
+        await update.message.reply_text("You are not authorized to use this command.")
+        return
 
-    # Send to PM users
-    async for user in pm_users.find({}):
+    message_to_broadcast = update.message.reply_to_message
+
+    if message_to_broadcast is None:
+        await update.message.reply_text("Please reply to a message to broadcast.")
+        return
+
+    all_chats = await top_global_groups_collection.distinct("group_id")
+    all_users = await pm_users.distinct("_id")
+
+    shuyaa = list(set(all_chats + all_users))
+
+    failed_sends = 0
+
+    for chat_id in shuyaa:
         try:
-            await to_broadcast.copy(chat_id=user["_id"])
-            success += 1
-        except:
-            failed += 1
+            await context.bot.forward_message(chat_id=chat_id,
+                                              from_chat_id=message_to_broadcast.chat_id,
+                                              message_id=message_to_broadcast.message_id)
+        except Exception as e:
+            print(f"Failed to send message to {chat_id}: {e}")
+            failed_sends += 1
 
-    # Send to groups & try pin
-    async for group in group_users.find({}):
-        group_id = group["_id"]
-        group_name = group.get("title", "Unknown")
-        try:
-            msg = await to_broadcast.copy(chat_id=group_id)
-            try:
-                await context.bot.pin_chat_message(chat_id=group_id, message_id=msg.message_id)
-                pinned += 1
-            except:
-                pass
-            group_names.append(group_name)
-            success += 1
-        except:
-            failed += 1
+    await update.message.reply_text(f"Broadcast complete. Failed to send to {failed_sends} chats/users.")
 
-    # Report to owner
-    report = (
-        f"📢 Broadcast Report:\n"
-        f"Group Names: {', '.join(group_names) or 'None'}\n"
-        f"Success: {success}\n"
-        f"Pined: {pinned}\n"
-        f"Unsuccess: {failed}"
-    )
-    try:
-        await context.bot.send_message(chat_id=OWNER_ID, text=report)
-    except:
-        pass
-
-    await update.message.reply_text("✅ Broadcast sent. Report delivered to owner.")
-
-# Add handler
 application.add_handler(CommandHandler("broadcast", broadcast, block=False))

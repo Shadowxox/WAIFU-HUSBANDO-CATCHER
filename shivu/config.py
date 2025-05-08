@@ -12,7 +12,7 @@ class Config(object):
     PHOTO_URL = ["https://files.catbox.moe/h0qot3.jpg", "https://files.catbox.moe/tx0o73.jpg", "https://files.catbox.moe/rqwt42.jpg"]
     SUPPORT_CHAT = "hwkwjieie"
     UPDATE_CHAT = "DBZ_COMMUNITY"
-    BOT_USERNAME = "Shadow_testingbot"
+    BOT_USERNAME = "@Shadow_testingbot"
     CHARA_CHANNEL_ID = "-1002474756169"
     api_id = 23287799
     api_hash = "9f4f17dae2181ee22c275b9b40a3c907"

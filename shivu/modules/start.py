@@ -32,14 +32,14 @@ async def start(update: Update, context: CallbackContext) -> None:
 
     if update.effective_chat.type== "private":
         
-        
-        caption = f"""
-        ***👻 welcome to DBZ! mr/miss {mention} 👀***
-        
-        ***🤏🏻 an anime-based games bot! add me to your group to start your journey.***
+        mention = f"[{escape(first_name)}](tg://user?id={user_id})"
+caption = f"""
+***👻 welcome to DBZ! mr/miss {mention} 👀***
+
+***🤏🏻 an anime-based games bot! add me to your group to start your journey.***
 
 ***🤭 get started by adding me to your group or clicking the button below!***
-        """
+"""
         
         keyboard = [
             [InlineKeyboardButton("ADD ME", url=f'http://t.me/{BOT_USERNAME}?startgroup=true')],

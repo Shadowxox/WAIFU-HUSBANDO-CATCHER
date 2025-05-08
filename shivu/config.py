@@ -9,7 +9,7 @@ class Config(object):
     TOKEN = "7525650740:AAHujfrXw8A4F3YthCemnWm5re28AbPcYBY"
     mongo_url = "mongodb+srv://naruto:hinatababy@cluster0.rqyiyzx.mongodb.net/"
     PARTNER = "7361967332", "5758240622", "7795212861"
-    YOUTUBE_VIDEO_URL = ["https://youtu.be/k4iYbwhXSOU?si=-B4ydEISKz07GAbB"]
+    PHOTO_URL = ["https://files.catbox.moe/h0qot3.jpg", "https://files.catbox.moe/tx0o73.jpg", "https://files.catbox.moe/rqwt42.jpg"]
     SUPPORT_CHAT = "hwkwjieie"
     UPDATE_CHAT = "DBZ_COMMUNITY"
     BOT_USERNAME = "@Shadow_testingbot"

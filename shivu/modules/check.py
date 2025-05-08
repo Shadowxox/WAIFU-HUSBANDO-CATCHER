@@ -47,26 +47,37 @@ async def who_owns(update: Update, context: CallbackContext) -> None:
 
     if query.data.startswith("owns_"):
         character_id = query.data.split("_", 1)[1]
-        cursor = user_collection.find({'collection': character_id})
+        pipeline = [
+            {"$match": {"collection": character_id}},
+            {"$group": {"_id": "$user_id", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}},
+            {"$limit": 10}
+        ]
+        owners_data = await user_collection.aggregate(pipeline).to_list(length=10)
 
-        owners = []
-        async for user in cursor:
-            name = user.get("first_name", "Unknown")
-            username = user.get("username")
-            mention = f"@{username}" if username else name
-            owners.append(mention)
+        if not owners_data:
+            msg = await query.message.reply_text("❌ No one owns this character yet.")
+            await asyncio.sleep(120)
+            return await msg.delete()
 
-        text = (
-            f"👥 Owners of character ID `{character_id}`:\n\n" +
-            ("\n".join(owners) if owners else "No one owns this character yet.")
-        )
+        lines = ["📝 *Users Who Have This Character:*"]
+        for entry in owners_data:
+            user = await context.bot.get_chat(entry["_id"])
+            name = user.first_name
+            if user.last_name:
+                name += f" {user.last_name}"
+            if user.username:
+                name = f"@{user.username}"
+            count = entry["count"]
+            lines.append(f"👤 {name} (x{count})")
 
-        owner_msg = await query.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+        lines.append("\n📊 *Top 10 Results Displayed!*")
+        text = "\n".join(lines)
 
-        # Auto-delete owner message after 2 minutes
+        sent = await query.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
         await asyncio.sleep(120)
         try:
-            await owner_msg.delete()
+            await sent.delete()
         except:
             pass
 

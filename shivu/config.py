@@ -10,8 +10,8 @@ class Config(object):
     mongo_url = "mongodb+srv://naruto:hinatababy@cluster0.rqyiyzx.mongodb.net/"
     PARTNER = "7361967332", "5758240622", "7795212861"
     YOUTUBE_VIDEO_URL = ["https://youtu.be/k4iYbwhXSOU?si=-B4ydEISKz07GAbB"]
-    SUPPORT_CHAT = "https://t.me/hwkwjieie"
-    UPDATE_CHAT = "https://t.me/DBZ_COMMUNITY"
+    SUPPORT_CHAT = "hwkwjieie"
+    UPDATE_CHAT = "DBZ_COMMUNITY"
     BOT_USERNAME = "@Shadow_testingbot"
     CHARA_CHANNEL_ID = "-1002474756169"
     api_id = 23287799

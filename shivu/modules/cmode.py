@@ -1,83 +1,80 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import CommandHandler, CallbackQueryHandler, ContextTypes
-from shivu import application, user_collection
+import asyncio
+from telethon import events, Button
+from telethon.sync import TelegramClient
+from pymongo import MongoClient
+from shivu import app
+from shivu import user_collection
+# MongoDB setup
 
-RARITY_EMOJIS = {
-    "⚪️ Common": "⚪️",
-    "🟣 Rare": "🟣",
-    "🟡 Legendary": "🟡",
-    "🟢 Medium": "🟢",
-    "💮 Special Edition": "💮",
-    "🔮 Limited Edition": "🔮",
-    "🎐 Celestial": "🎐",
-    "🔞 Erotic": "🔞",
-    "💝 Valentine Special": "💝",
-    "🧬 X Verse": "🧬",
-    "🎃 Halloween Special": "🎃",
-    "❄️ Winter Special": "❄️",
-    "🌤️ Summer Special": "🌤️",
-    "💫 Angelic": "💫",
-    "All": "📦"
-}
+# Handler for the /nhmode command
+@app.on(events.NewMessage(pattern='/cmode'))
+async def ncmode(event):
+    user_id = event.sender_id
 
-def get_rarity_keyboard(user_id):
-    buttons = []
-    row = []
-    for rarity, emoji in RARITY_EMOJIS.items():
-        row.append(InlineKeyboardButton(emoji, callback_data=f"cmode:{user_id}:{rarity}"))
-        if len(row) == 5:
-            buttons.append(row)
-            row = []
-    if row:
-        buttons.append(row)
-    return InlineKeyboardMarkup(buttons)
 
-async def cmode(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user = update.message.reply_to_message.from_user if update.message.reply_to_message else update.effective_user
-    keyboard = get_rarity_keyboard(user.id)
-    await update.message.reply_text(
-        "🎴 Select a rarity to filter your harem:", reply_markup=keyboard
-    )
+    buttons = [
+        [
+            Button.inline("See by Rarities", data="rarity_mode:see_by_rarities"),
+            Button.inline("Default", data="rarity_mode:default")
+        ]
+    ]
 
-async def cmode_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    query = update.callback_query
-    caller_id = query.from_user.id
+    await event.respond("Select a rarity mode:", buttons=buttons)
 
+# Handler for callback queries
+# Handler for callback queries
+@app.on(events.CallbackQuery)
+async def callback_query_handler(event):
     try:
-        _, user_id_str, rarity = query.data.split(":", maxsplit=2)
-        owner_id = int(user_id_str)
-    except:
-        await query.answer("❌ Invalid selection.", show_alert=True)
-        return
+        data = event.data.decode('utf-8')
 
-    if caller_id != owner_id:
-        await query.answer("❌ This isn’t your harem menu.", show_alert=True)
-        return
+        if data == "rarity_mode:see_by_rarities":
+            rarities_buttons = [
+                [
+                    Button.inline("⚪️ Common", data="rarity:⚪️ Common"),
+                    Button.inline("🟢 Medium", data="rarity:🟢 Medium"),
+                    Button.inline("🟣 Rare", data="rarity:🟣 Rare"),
+                    Button.inline("🟡 Legendary", data="rarity:🟡 Legendary"),
+                ],
+                [
+                    Button.inline("💮 Special Edition", data="rarity:💮 Special Edition"),
+                    Button.inline("🔮 Limited Edition", data="rarity:🔮 Limited Edition"),
+                    Button.inline("🎐 Celestial", data="rarity:🎐 Celestial"),
+                    Button.inline("🔞 Erotic", data="rarity:🔞 Erotic"),
+                ],
+                [
+                    Button.inline("🧬 X Verse", data="rarity:🧬 X Verse"),
+                    Button.inline("🎃 Halloween Special", data="rarity:🎃 Halloween Special"),
+                    Button.inline("💝 Valentine Special", data="rarity:💝 Valentine Special"),
+                    Button.inline("❄️ Winter Special", data="rarity:❄️ Winter Special"),
+                ],
+                [
+                    Button.inline("🌤️ Summer Special", data="rarity:🌤️ Summer Special"),
+                ]
+            ]
+            await event.edit("Select a rarity:", buttons=rarities_buttons)
 
-    await query.answer()  # safe to proceed now
+        elif data.startswith("rarity:"):
+            rarity_mode = data.split(":")[1]
+            await user_collection.update_one(
+                {'id': event.sender_id},
+                {'$set': {'rarity_mode': rarity_mode}},
+                upsert=True
+            )
+            await event.edit(f"Your rarity mode is now set to {rarity_mode}.")
 
-    user_data = await user_collection.find_one({"id": owner_id})
-    if not user_data or "characters" not in user_data:
-        await query.edit_message_text("❌ No characters found.")
-        return
+        elif data == "rarity_mode:default":
+            await user_collection.update_one(
+                {'id': event.sender_id},
+                {'$set': {'rarity_mode': 'All'}},
+                upsert=True
+            )
+            await event.edit("Your rarity mode is now set to All.")
 
-    characters = user_data["characters"]
-    if rarity != "All":
-        characters = [c for c in characters if c.get("rarity") == rarity]
+        # Schedule the deletion of the callback query message after 2 minutes
+        await asyncio.sleep(120)
+        await event.delete()
 
-    if not characters:
-        await query.edit_message_text(f"No characters found with rarity: {rarity}")
-        return
-
-    names = [c.get("name", "???") for c in characters]
-    preview = ", ".join([f"<code>{n}</code>" for n in names[:15]])
-    if len(names) > 15:
-        preview += f"... and {len(names) - 15} more."
-
-    await query.edit_message_text(
-        f"🎴 <b>{rarity}</b> characters in harem:\n\n{preview}",
-        parse_mode="HTML"
-    )
-
-application.add_handler(CommandHandler("cmode", cmode, block=False))
-application.add_handler(CallbackQueryHandler(cmode_callback, pattern="^cmode:"))
+    except Exception as e:
+        await event.answer("An error occurred. Please try again.", alert=True)
+        print(f"Error handling callback query: {e}")

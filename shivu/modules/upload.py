@@ -26,7 +26,7 @@ rarity_map = {
     5: "💮 Special Edition",
     6: "🔮 Limited Edition",
     7: "🎐 Celestial",
-    8: "💸 Premium Edition",
+    8: "🔞 Erotic",
     9: "💝 Valentine Special",
     10: "🧬 X Verse",
     11: "🎃 Halloween Special",
@@ -37,7 +37,7 @@ rarity_map = {
 """
 
 # Define the channel ID and rarity map
-CHARA_CHANNEL_ID = -1002680733244
+CHARA_CHANNEL_ID = -1002621413939
 
 rarity_map = {
     1: "⚪️ Common",
@@ -47,7 +47,7 @@ rarity_map = {
     5: "💮 Special Edition",
     6: "🔮 Limited Edition",
     7: "🎐 Celestial",
-    8: "💸 Premium Edition",
+    8: "🔞 Erotic",
     9: "💝 Valentine Special",
     10: "🧬 X Verse",
     11: "🎃 Halloween Special",
@@ -206,7 +206,7 @@ async def updates(update: Update, context: CallbackContext) -> None:
                 5: "💮 Special Edition",
                 6: "🔮 Limited Edition",
                 7: "🎐 Celestial",
-                8: "💸 Premium Edition",
+                8: "🔞 Erotic",
                 9: "💝 Valentine Special",
                 10: "🧬 X Verse",
                 11: "🎃 Halloween Special",

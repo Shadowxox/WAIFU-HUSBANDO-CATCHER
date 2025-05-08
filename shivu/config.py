@@ -11,7 +11,7 @@ class Config(object):
     PARTNER = "7361967332", "5758240622", "7795212861"
     PHOTO_URL = ["https://files.catbox.moe/h0qot3.jpg", "https://files.catbox.moe/tx0o73.jpg", "https://files.catbox.moe/rqwt42.jpg"]
     SUPPORT_CHAT = "-1002680733244"
-    UPDATE_CHAT = "-1002680733244"
+    UPDATE_CHAT = "-1002621413939"
     BOT_USERNAME = "@Shadow_testingbot"
     CHARA_CHANNEL_ID = "-1002474756169"
     api_id = 23287799

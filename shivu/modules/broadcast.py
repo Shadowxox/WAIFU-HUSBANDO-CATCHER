@@ -1,6 +1,6 @@
 from telegram import Update, Chat, ChatInviteLink
 from telegram.ext import CallbackContext, CommandHandler
-from shivu import application, top_global_groups_collection, pm_users, OWNER_ID, SUDOERS
+from shivu import application, top_global_groups_collection, pm_users, OWNER_ID, sudo_users
 
 async def broadcast(update: Update, context: CallbackContext):
     user_id = update.effective_user.id

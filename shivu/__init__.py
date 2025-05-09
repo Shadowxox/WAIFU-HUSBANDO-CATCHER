@@ -3,6 +3,13 @@ import os
 from pyrogram import Client 
 from telegram.ext import Application
 from motor.motor_asyncio import AsyncIOMotorClient
+import asyncio
+from telethon import events, Button
+from telethon.sync import TelegramClient
+
+
+
+
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -30,9 +37,12 @@ UPDATE_CHAT = Config.UPDATE_CHAT
 BOT_USERNAME = Config.BOT_USERNAME 
 sudo_users = Config.sudo_users
 OWNER_ID = Config.OWNER_ID 
+PARTNER = Config.PARTNER
+
 
 application = Application.builder().token(TOKEN).build()
 shivuu = Client("Shivu", api_id, api_hash, bot_token=TOKEN)
+app = TelegramClient('bot', api_id, api_hash).start(bot_token=TOKEN)
 lol = AsyncIOMotorClient(mongo_url)
 db = lol['Character_catcher']
 collection = db['anime_characters_lol']
@@ -41,3 +51,8 @@ user_collection = db["user_collection_lmaoooo"]
 group_user_totals_collection = db['group_user_totalsssssss']
 top_global_groups_collection = db['top_global_groups']
 pm_users = db['total_pm_users']
+users_collection = db['users']
+prizes_collection = db['prizes']
+shops_collection = db['shops']
+ban_collection = db['bans']
+banned_collection = db['bannedcollecion']

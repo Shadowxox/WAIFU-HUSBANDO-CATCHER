@@ -2,7 +2,7 @@ class Config(object):
     LOGGER = True
 
     # Get this value from my.telegram.org/apps
-    OWNER_ID = "6765826972"
+    OWNER_ID = "7795212861"
     sudo_users = "6845325416", "6765826972"
     GROUP_ID = -1002133191051
     TOKEN = "7369319572:AAEP7YLvQP3FQDwY2jMNpos-Zv9B4bnkctE"
@@ -12,8 +12,8 @@ class Config(object):
     UPDATE_CHAT = "Collect_em_support"
     BOT_USERNAME = "Collect_Em_AllBot"
     CHARA_CHANNEL_ID = "-1002133191051"
-    api_id = 26626068
-    api_hash = "bf423698bcbe33cfd58b11c78c42caa2"
+    api_id = 23287799
+    api_hash = "9f4f17dae2181ee22c275b9b40a3c907"
 
     
 class Production(Config):
